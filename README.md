@@ -1,2 +1,2 @@
-# custom_macropad
+# Custom Pad
 STM32 macropad utilizing BLEKeyboard
