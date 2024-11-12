@@ -8,7 +8,7 @@
  * - Features: 
  * =======================================================
  * - Libraries: Keypad by Mark Stanley, Alexander Brevig;
- * ESP-BLE-Keyboard by T-vk
+ * ESP-BLE-Keyboard by T-vk; Adafruit SSD1306 by Adafruit
  * =======================================================
  * - Inspiration: arduino-switcheroonie by witnessmenow
  * (Brian Lough)
@@ -17,6 +17,11 @@
 #include <BleKeyboard.h>
 #include <Keypad.h>
 BleKeyboard bleKeyboard;
+
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 /* =================================
  * Pins on keypad (left to right)
@@ -37,11 +42,23 @@ char keys[ROWS][COLS] = {
 };
 
 // Definition of pins on board
-byte rowPins[ROWS] = {26, 25, 33, 32}; // Row pins
-byte colPins[COLS] = {12, 14, 27}; // Column pins
+byte rowPins[ROWS] = {27, 26, 25, 33}; // Row pins
+byte colPins[COLS] = {13, 12, 14}; // Column pins
 
 // Definition of keypad
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+/* ====================
+ * Pins for OLED:
+ * SCL - 22; SDA - 21
+ * ==================== */
+// Define screen dimensions (in pixels)
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 32
+
+#define OLED_RESET -1
+#define SCREEN_ADDRESS 0x3C
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 /* =======================
  * Constants and variables
@@ -68,9 +85,24 @@ const uint8_t* KEY_COMMANDS[NUM_KEYS][MAX_LAYERS] = {
 };
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
   Serial.println("Starting BLE work!");
   bleKeyboard.begin();
+
+  // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;); // Don't proceed, loop forever
+  }
+
+    // Show initial display buffer contents on the screen --
+  // the library initializes this with an Adafruit splash screen.
+  display.display();
+  delay(2000); // Pause for 2 seconds
+
+  // Clear the buffer
+  display.clearDisplay();
+  testdrawline();      // Draw many lines
 }
 
 void loop() {
@@ -128,4 +160,65 @@ void loop() {
   }
 
   delay(100);
+}
+
+void testdrawline() {
+  int16_t i;
+
+  display.clearDisplay(); // Clear display buffer
+
+  for(i=0; i<display.width(); i+=4) {
+    display.drawLine(0, 0, i, display.height()-1, SSD1306_WHITE);
+    display.display(); // Update screen with each newly-drawn line
+    delay(1);
+  }
+  for(i=0; i<display.height(); i+=4) {
+    display.drawLine(0, 0, display.width()-1, i, SSD1306_WHITE);
+    display.display();
+    delay(1);
+  }
+  delay(250);
+
+  display.clearDisplay();
+
+  for(i=0; i<display.width(); i+=4) {
+    display.drawLine(0, display.height()-1, i, 0, SSD1306_WHITE);
+    display.display();
+    delay(1);
+  }
+  for(i=display.height()-1; i>=0; i-=4) {
+    display.drawLine(0, display.height()-1, display.width()-1, i, SSD1306_WHITE);
+    display.display();
+    delay(1);
+  }
+  delay(250);
+
+  display.clearDisplay();
+
+  for(i=display.width()-1; i>=0; i-=4) {
+    display.drawLine(display.width()-1, display.height()-1, i, 0, SSD1306_WHITE);
+    display.display();
+    delay(1);
+  }
+  for(i=display.height()-1; i>=0; i-=4) {
+    display.drawLine(display.width()-1, display.height()-1, 0, i, SSD1306_WHITE);
+    display.display();
+    delay(1);
+  }
+  delay(250);
+
+  display.clearDisplay();
+
+  for(i=0; i<display.height(); i+=4) {
+    display.drawLine(display.width()-1, 0, 0, i, SSD1306_WHITE);
+    display.display();
+    delay(1);
+  }
+  for(i=0; i<display.width(); i+=4) {
+    display.drawLine(display.width()-1, 0, i, display.height()-1, SSD1306_WHITE);
+    display.display();
+    delay(1);
+  }
+
+  delay(2000); // Pause for 2 seconds
 }
